@@ -188,6 +188,97 @@ class Generator:
         raise RuntimeError("Generator failed to produce valid JSON.") from last_error
 
 
+class ReplayGenerator:
+    """
+    Replays pre-recorded responses instead of calling an LLM.
+
+    Useful for offline training from historical data (logs, traces, etc.)
+    where you want ACE to learn from actual past interactions without
+    generating new responses.
+
+    Args:
+        responses: Dict mapping questions to their pre-recorded answers
+        default_response: Response to return if question not found (default: "")
+
+    Example:
+        >>> responses = {
+        ...     "What is 2+2?": "4",
+        ...     "What is the capital of France?": "Paris"
+        ... }
+        >>> generator = ReplayGenerator(responses)
+        >>> output = generator.generate(
+        ...     question="What is 2+2?",
+        ...     context="",
+        ...     playbook=Playbook()
+        ... )
+        >>> print(output.final_answer)
+        4
+    """
+
+    def __init__(
+        self,
+        responses: Dict[str, str],
+        default_response: str = ""
+    ) -> None:
+        self.responses = responses
+        self.default_response = default_response
+
+    @maybe_track(
+        name="replay_generator_generate",
+        tags=["ace-framework", "role", "replay-generator"],
+        project_name="ace-roles"
+    )
+    def generate(
+        self,
+        *,
+        question: str,
+        context: Optional[str],
+        playbook: Playbook,
+        reflection: Optional[str] = None,
+        **kwargs: Any,
+    ) -> GeneratorOutput:
+        """
+        Return the pre-recorded response for the given question.
+
+        Args:
+            question: The question to answer
+            context: Additional context (ignored in replay)
+            playbook: The current playbook (ignored in replay)
+            reflection: Optional reflection (ignored in replay)
+            **kwargs: Additional arguments (ignored in replay)
+
+        Returns:
+            GeneratorOutput with the replayed answer
+        """
+        # Get the pre-recorded response
+        question_found = question in self.responses
+        final_answer = self.responses.get(question, self.default_response)
+
+        # Create metadata for observability
+        reasoning = "[Replayed from historical data]"
+        if not question_found and self.default_response:
+            reasoning = f"[Replayed - using default response (question not in mapping)]"
+        elif not question_found:
+            reasoning = f"[Replayed - question not found in mapping, empty response]"
+
+        # Return GeneratorOutput matching the interface
+        return GeneratorOutput(
+            reasoning=reasoning,
+            final_answer=final_answer,
+            bullet_ids=[],  # No bullets used in replay
+            raw={
+                "reasoning": reasoning,
+                "final_answer": final_answer,
+                "bullet_ids": [],
+                "replay_metadata": {
+                    "question_found": question_found,
+                    "used_default": not question_found,
+                    "total_responses_in_mapping": len(self.responses)
+                }
+            }
+        )
+
+
 @dataclass
 class BulletTag:
     id: str

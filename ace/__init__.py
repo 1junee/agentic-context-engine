@@ -5,6 +5,7 @@ from .delta import DeltaOperation, DeltaBatch
 from .llm import LLMClient, DummyLLMClient, TransformersLLMClient
 from .roles import (
     Generator,
+    ReplayGenerator,
     Reflector,
     Curator,
     GeneratorOutput,
@@ -47,6 +48,7 @@ __all__ = [
     "TransformersLLMClient",
     "LiteLLMClient",
     "Generator",
+    "ReplayGenerator",
     "Reflector",
     "Curator",
     "GeneratorOutput",

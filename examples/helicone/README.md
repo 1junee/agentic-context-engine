@@ -60,6 +60,43 @@ print(f"Extracted {env.get_num_samples()} training samples")
 question = env.format_sample_as_question(0)
 ```
 
+### `offline_training_replay.py`
+Complete example showing ACE offline training with Helicone replay data.
+
+**What it does:**
+- Loads Helicone traces and extracts question-response pairs
+- Uses `ReplayGenerator` to replay historical responses (no new LLM calls for generation)
+- Trains Reflector and Curator to learn from historical interactions
+- **Automatic Opik observability tracking** for all operations
+- Saves learned playbook for future use
+
+**Features:**
+- 💰 **Cost-effective**: No LLM calls for generation (only Reflector/Curator)
+- 📊 **Full observability**: Opik tracks which responses are replayed, coverage metrics
+- 🔍 **Debug-friendly**: See exactly which questions are in your mapping vs. using defaults
+- 🎯 **Production learning**: Train from real production data
+
+**Usage:**
+```bash
+# 1. Place your Helicone data
+cp your-helicone-export.json ../../.private/helicone/oneline.json
+
+# 2. (Optional) Install observability
+pip install ace-framework[observability]
+
+# 3. Run the example
+python offline_training_replay.py
+```
+
+**Opik Integration:**
+When Opik is installed, you'll see:
+- Replay operations tagged as `replay-generator` in traces
+- Metadata showing question coverage (found vs. defaults)
+- Comparison with regular Generator operations
+- View at: https://www.comet.com/opik
+
+This demonstrates **replay-based learning** where ACE learns from past interactions without generating new responses.
+
 ## Data Setup
 
 **IMPORTANT:** Data files are NOT stored in this folder. They are kept in `.private/helicone/` to avoid committing sensitive data.
