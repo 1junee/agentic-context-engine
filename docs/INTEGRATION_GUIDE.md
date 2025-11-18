@@ -47,10 +47,14 @@ result = your_agent.execute(enhanced_task)  # Your custom agent
 
 # 3. AFTER: Learn from execution
 # Build adapter for Reflector
+# Note: bullet_ids are extracted from citations in reasoning
+from ace.roles import extract_cited_bullet_ids
+
+reasoning_text = f"Task: {task}"
 generator_output = GeneratorOutput(
-    reasoning=f"Task: {task}",
+    reasoning=reasoning_text,
     final_answer=result.output,
-    bullet_ids=[],  # Not using Generator
+    bullet_ids=extract_cited_bullet_ids(reasoning_text),
     raw={"success": result.success}
 )
 
@@ -215,10 +219,13 @@ class MyACEAgent:
 
     def _learn(self, task, result):
         # Create adapter
+        from ace.roles import extract_cited_bullet_ids
+
+        reasoning = f"Task: {task}"
         gen_output = GeneratorOutput(
-            reasoning=f"Task: {task}",
+            reasoning=reasoning,
             final_answer=result.output,
-            bullet_ids=[],
+            bullet_ids=extract_cited_bullet_ids(reasoning),
             raw={"success": result.success}
         )
 
@@ -239,6 +246,53 @@ class MyACEAgent:
 
         self.playbook.apply_delta(curator_output.delta)
 ```
+
+---
+
+## Citation-Based Strategy Tracking
+
+ACE uses citation-based tracking where agents cite strategy IDs inline in their reasoning:
+
+### How It Works
+
+**When providing strategies to your agent:**
+- Strategies are formatted with IDs like `[content_extraction-00001]`
+- Agent cites them in reasoning: `"Following [content_extraction-00001], I will extract..."`
+- ACE extracts citations automatically using `extract_cited_bullet_ids()`
+
+**Example:**
+```python
+from ace.roles import extract_cited_bullet_ids
+
+# Agent's reasoning with citations
+reasoning = """
+Step 1: Following [navigation-00042], navigate to the main page.
+Step 2: Using [extraction-00003], extract the title element.
+"""
+
+# Extract cited strategies
+cited_ids = extract_cited_bullet_ids(reasoning)
+# Returns: ['navigation-00042', 'extraction-00003']
+
+# Pass to GeneratorOutput
+gen_output = GeneratorOutput(
+    reasoning=reasoning,
+    final_answer="Title extracted",
+    bullet_ids=cited_ids,  # Extracted citations
+    raw={}
+)
+```
+
+**For External Agents (browser-use, etc.):**
+```python
+# Extract citations from agent's thought process
+if hasattr(history, 'model_thoughts'):
+    thoughts = history.model_thoughts()
+    thoughts_text = "\n".join(t.thinking for t in thoughts)
+    cited_ids = extract_cited_bullet_ids(thoughts_text)
+```
+
+**Citation Format:** `[section-digits]` pattern (e.g., `[general-00001]`, `[math-00042]`)
 
 ---
 

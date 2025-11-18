@@ -5,6 +5,23 @@ All notable changes to ACE Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Citation-based strategy tracking - strategies cited inline in reasoning with `[section-00001]` format
+- Enhanced browser trace feedback - Reflector now receives detailed execution logs (thoughts, actions, results, URLs, errors)
+- Comprehensive test coverage for core LLM interfaces (17 new tests)
+- `extract_cited_bullet_ids()` utility for parsing strategy citations from text
+
+### Changed
+- Generator no longer requires `bullet_ids` in JSON output - extracted from reasoning automatically
+- ACEAgent passes full browser execution trace to Reflector for improved learning
+- Test coverage improved from 28% to 70%
+
+### Fixed
+- Prompt v2.1 test assertions updated to match current format
+- All 206 tests now pass (was 189)
+
 ## [0.4.0] - 2025-10-26
 
 ### Added
