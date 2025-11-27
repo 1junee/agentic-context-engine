@@ -82,6 +82,52 @@ def parse_next_task_from_todo(workspace_dir: Path) -> str | None:
     return None
 
 
+def build_task_prompt(task: str, context: str = "") -> str:
+    """
+    Build rich prompt for Claude Code with workspace context and instructions.
+
+    This restores the detailed prompting from the original claude_code_environment.py
+    that guides Claude Code on workspace structure, priorities, and response format.
+    """
+    return f"""TASK:
+{task}
+
+CONTEXT:
+{context if context else 'None'}
+
+WORKSPACE STRUCTURE:
+- source/ - Python source code to translate
+- target/ - TypeScript output directory
+- specs/ - project.md (spec) and rules.md (coding standards)
+- .agent/ - your scratchpad (TODO.md, PLAN.md, notes)
+
+CRITICAL REQUIREMENTS:
+1. Apply relevant strategies from the playbook context (injected above)
+2. Make atomic commits after each logical unit of work
+3. Focus on actual work, not elaborate documentation or setup
+
+FOCUS YOUR EFFORT ON:
+- Reading source files and understanding the implementation
+- Writing quality code following the specs
+- Writing/updating tests (aim for 20% of effort)
+- Fixing compilation/test errors
+
+DO NOT spend excessive time on:
+- Elaborate documentation (README, guides)
+- Complex linting/CI configurations
+- Empty directory structures
+
+RESPONSE FORMAT:
+1. ## Approach - explain your plan and why
+2. ## Implementation - do the actual work
+3. ## Summary - what was accomplished
+
+AFTER COMPLETING THIS TASK:
+1. Update TODO.md: Mark this task as [x] (change [ ] to [x])
+2. STOP - do not continue to next tasks (the loop will call you again)
+"""
+
+
 def main():
     """Main orchestration function with continuous loop."""
     print("\n ACE + Claude Code")
@@ -149,18 +195,13 @@ List specific Python files from source/ that need translation."""
         print(f" EXECUTING TASK {task_count}")
         print("=" * 70 + "\n")
 
-        # Add instruction for Claude Code to mark task complete and stop
-        if task_count > 1:  # Only for tasks from TODO.md, not bootstrap
-            task_prompt = f"""{task}
-
-After completing this task:
-1. Update TODO.md: Mark this task as [x] (change [ ] to [x])
-2. STOP - do not continue to next tasks (the loop will call you again)
-"""
+        # Build rich prompt with workspace context (for non-bootstrap tasks)
+        if task_count > 1:
+            task_prompt = build_task_prompt(task, context)
         else:
-            task_prompt = task
+            task_prompt = task  # Bootstrap task doesn't need wrapper
 
-        result = agent.run(task=task_prompt, context=context)
+        result = agent.run(task=task_prompt, context="")
         results.append(result)
 
         # Summary
