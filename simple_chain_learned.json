@@ -1,0 +1,38 @@
+{
+  "bullets": {
+    "factual_questions-00001": {
+      "id": "factual_questions-00001",
+      "section": "factual_questions",
+      "content": "Answer factual questions directly without elaboration",
+      "helpful": 1,
+      "harmful": 0,
+      "neutral": 0,
+      "created_at": "2025-11-28T22:12:11.085202+00:00",
+      "updated_at": "2025-11-28T22:12:11.085286+00:00",
+      "embedding": null,
+      "status": "active"
+    },
+    "response_formatting-00002": {
+      "id": "response_formatting-00002",
+      "section": "response_formatting",
+      "content": "Format answers as complete sentences, not fragments",
+      "helpful": 1,
+      "harmful": 0,
+      "neutral": 0,
+      "created_at": "2025-11-28T22:12:11.085345+00:00",
+      "updated_at": "2025-11-28T22:12:11.085352+00:00",
+      "embedding": null,
+      "status": "active"
+    }
+  },
+  "sections": {
+    "factual_questions": [
+      "factual_questions-00001"
+    ],
+    "response_formatting": [
+      "response_formatting-00002"
+    ]
+  },
+  "next_id": 2,
+  "similarity_decisions": {}
+}
