@@ -74,8 +74,8 @@ def main():
     print("Each run uses the playbook from previous runs.")
     print("All metrics logged to .data/runs.json\n")
 
-    response = input("Start experiment? (y/n): ")
-    if response.lower() != "y":
+    response = input("Start experiment? (y/n): ").strip().lower()
+    if response not in ["y", "yes"]:
         print("Cancelled")
         return
 
