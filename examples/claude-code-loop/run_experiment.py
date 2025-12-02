@@ -72,12 +72,8 @@ def main():
     print("=" * 70)
     print("\nThis will run ACE 4 times on the same Python→TypeScript task.")
     print("Each run uses the playbook from previous runs.")
-    print("All metrics logged to .data/runs.json\n")
-
-    response = input("Start experiment? (y/n): ").strip().lower()
-    if response not in ["y", "yes"]:
-        print("Cancelled")
-        return
+    print("All metrics logged to .data/runs.json")
+    print("\nStarting experiment...\n")
 
     total_start = time.time()
 
