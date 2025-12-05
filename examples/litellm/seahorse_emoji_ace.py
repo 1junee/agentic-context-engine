@@ -63,10 +63,19 @@ def main():
     question = "Give me the seahorse emoji?"
     environment = SimpleEnvironment()
 
-    # Round 1: First ask (likely wrong)
-    console.print("[yellow]--- Round 1: First Ask ---[/yellow]")
-    console.print(f"[bold]Question:[/bold] {question}\n")
+    if len(agent.skillbook.skills()) > 0:
+        console.print(
+            f"[green]Skillbook updated with {len(agent.skillbook.skills())} learned strategies[/green]"
+        )
+        console.print("\n[cyan]📚 Current Skillbook:[/cyan]")
+        console.print(Panel(agent.skillbook.as_prompt(), style="cyan"))
 
+    # Now ask the actual question
+    console.print(f"\n[yellow]━━━ Round 2: Asking About Seahorse ━━━[/yellow]")
+    console.print(f"[bold]Question:[/bold] {question}")
+    console.print(
+        f"[dim]Skillbook: {len(agent.skillbook.skills())} learned strategies[/dim]\n"
+    )
     answer1 = agent.ask(question=question, context="")
     console.print(f"[bold]Answer:[/bold] {answer1}")
 
@@ -78,13 +87,15 @@ def main():
     agent.learn(samples=[sample], environment=environment, epochs=1)
 
     console.print(
-        f"[green]Playbook: {len(list(agent.playbook.bullets()))} strategies[/green]"
+        f"[green]Skillbook now contains {len(agent.skillbook.skills())} total learned insights[/green]"
     )
 
-    # Round 2: Ask again (should be better)
-    console.print(f"\n[yellow]--- Round 2: Ask Again ---[/yellow]")
-    console.print(f"[bold]Question:[/bold] {question}\n")
-
+    # Final ask to show further evolution
+    console.print(f"\n[yellow]━━━ Round 3: Enhanced Knowledge ━━━[/yellow]")
+    console.print(f"[bold]Question:[/bold] {question}")
+    console.print(
+        f"[dim]Skillbook: {len(agent.skillbook.skills())} learned strategies[/dim]\n"
+    )
     answer2 = agent.ask(question=question, context="")
     console.print(f"[bold]Answer:[/bold] {answer2}")
 

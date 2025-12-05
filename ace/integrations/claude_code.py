@@ -9,7 +9,7 @@ Example:
 
     agent = ACEClaudeCode(working_dir="./my_project")
     result = agent.run(task="Refactor the auth module")
-    agent.save_playbook("learned.json")
+    agent.save_skillbook("learned.json")
 
     # With async learning
     agent = ACEClaudeCode(working_dir="./project", async_learning=True)
@@ -35,10 +35,10 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from dataclasses import dataclass
 
 from ..llm_providers import LiteLLMClient
-from ..playbook import Playbook
-from ..roles import Reflector, Curator, GeneratorOutput
+from ..skillbook import Skillbook
+from ..roles import Reflector, SkillManager, AgentOutput
 from ..prompts_v2_1 import PromptManager
-from .base import wrap_playbook_context
+from .base import wrap_skillbook_context
 
 if TYPE_CHECKING:
     from ..deduplication import DeduplicationConfig, DeduplicationManager
@@ -67,7 +67,7 @@ class ACEClaudeCode:
     Drop-in wrapper that automatically:
     - Injects learned strategies into prompts
     - Reflects on execution results
-    - Updates playbook with new learnings
+    - Updates skillbook with new learnings
 
     Usage:
         # Simple usage
@@ -78,12 +78,12 @@ class ACEClaudeCode:
         agent = ACEClaudeCode(working_dir="./project")
         agent.run(task="Task 1")
         agent.run(task="Task 2")  # Uses Task 1 learnings
-        agent.save_playbook("expert.json")
+        agent.save_skillbook("expert.json")
 
         # Start with existing knowledge
         agent = ACEClaudeCode(
             working_dir="./project",
-            playbook_path="expert.json"
+            skillbook_path="expert.json"
         )
         agent.run(task="New task")
     """
@@ -94,8 +94,8 @@ class ACEClaudeCode:
         ace_model: str = "gpt-4o-mini",
         ace_llm: Optional[LiteLLMClient] = None,
         ace_max_tokens: int = 2048,
-        playbook: Optional[Playbook] = None,
-        playbook_path: Optional[str] = None,
+        skillbook: Optional[Skillbook] = None,
+        skillbook_path: Optional[str] = None,
         is_learning: bool = True,
         timeout: int = 600,
         async_learning: bool = False,
@@ -107,16 +107,16 @@ class ACEClaudeCode:
 
         Args:
             working_dir: Directory where Claude Code will execute
-            ace_model: Model for ACE learning (Reflector/Curator)
+            ace_model: Model for ACE learning (Reflector/SkillManager)
             ace_llm: Custom LLM client for ACE (overrides ace_model)
             ace_max_tokens: Max tokens for ACE learning LLM
-            playbook: Existing Playbook instance
-            playbook_path: Path to load playbook from
+            skillbook: Existing Skillbook instance
+            skillbook_path: Path to load skillbook from
             is_learning: Enable/disable ACE learning
             timeout: Execution timeout in seconds (default: 600)
             async_learning: Run learning in background (default: False)
             max_reflector_workers: Parallel Reflector threads (default: 3)
-            dedup_config: Optional DeduplicationConfig for bullet deduplication
+            dedup_config: Optional DeduplicationConfig for skill deduplication
         """
         if not CLAUDE_CODE_AVAILABLE:
             raise RuntimeError(
@@ -131,15 +131,15 @@ class ACEClaudeCode:
         self.max_reflector_workers = max_reflector_workers
         self.dedup_config = dedup_config
 
-        # Load or create playbook
-        if playbook_path:
-            self.playbook = Playbook.load_from_file(playbook_path)
-        elif playbook:
-            self.playbook = playbook
+        # Load or create skillbook
+        if skillbook_path:
+            self.skillbook = Skillbook.load_from_file(skillbook_path)
+        elif skillbook:
+            self.skillbook = skillbook
         else:
-            self.playbook = Playbook()
+            self.skillbook = Skillbook()
 
-        # Create ACE LLM (for Reflector/Curator)
+        # Create ACE LLM (for Reflector/SkillManager)
         self.ace_llm = ace_llm or LiteLLMClient(
             model=ace_model, max_tokens=ace_max_tokens
         )
@@ -149,8 +149,8 @@ class ACEClaudeCode:
         self.reflector = Reflector(
             self.ace_llm, prompt_template=prompt_mgr.get_reflector_prompt()
         )
-        self.curator = Curator(
-            self.ace_llm, prompt_template=prompt_mgr.get_curator_prompt()
+        self.skill_manager = SkillManager(
+            self.ace_llm, prompt_template=prompt_mgr.get_skill_manager_prompt()
         )
 
         # Initialize deduplication manager if config provided
@@ -183,13 +183,13 @@ class ACEClaudeCode:
         Returns:
             ClaudeCodeResult with execution details
         """
-        # 1. INJECT: Add playbook context if learning enabled and has bullets
-        if self.is_learning and self.playbook.bullets():
-            playbook_context = wrap_playbook_context(self.playbook)
+        # 1. INJECT: Add skillbook context if learning enabled and has skills
+        if self.is_learning and self.skillbook.skills():
+            skillbook_context = wrap_skillbook_context(self.skillbook)
             prompt = (
-                f"{task}\n\n{context}\n\n{playbook_context}"
+                f"{task}\n\n{context}\n\n{skillbook_context}"
                 if context
-                else f"{task}\n\n{playbook_context}"
+                else f"{task}\n\n{skillbook_context}"
             )
         else:
             prompt = f"{task}\n\n{context}" if context else task
@@ -329,11 +329,11 @@ class ACEClaudeCode:
 
     def _learn_from_execution(self, task: str, result: ClaudeCodeResult):
         """Run ACE learning pipeline after execution."""
-        # Create GeneratorOutput for Reflector
-        generator_output = GeneratorOutput(
+        # Create AgentOutput for Reflector
+        agent_output = AgentOutput(
             reasoning=result.execution_trace,
             final_answer=result.output,
-            bullet_ids=[],  # External agents don't pre-select bullets
+            skill_ids=[],  # External agents don't pre-select skills
             raw={
                 "success": result.success,
                 "returncode": result.returncode,
@@ -349,48 +349,49 @@ class ACEClaudeCode:
         # Run Reflector
         reflection = self.reflector.reflect(
             question=task,
-            generator_output=generator_output,
-            playbook=self.playbook,
+            agent_output=agent_output,
+            skillbook=self.skillbook,
             ground_truth=None,
             feedback=feedback,
         )
 
-        # Get similarity report for Curator if deduplication enabled
+        # Get similarity report for SkillManager if deduplication enabled
         similarity_report = None
         if self._dedup_manager:
-            similarity_report = self._dedup_manager.get_similarity_report(self.playbook)
-
-        # Run Curator (with similarity report if available)
-        curator_output = self.curator.curate(
-            reflection=reflection,
-            playbook=self.playbook,
-            question_context=f"task: {task}",
-            progress=f"Claude Code: {task}",
-            similarity_report=similarity_report,
-        )
-
-        # Update playbook with delta operations
-        self.playbook.apply_delta(curator_output.delta)
-
-        # Apply consolidation operations if deduplication enabled
-        if self._dedup_manager and curator_output.raw:
-            self._dedup_manager.apply_operations_from_response(
-                curator_output.raw, self.playbook
+            similarity_report = self._dedup_manager.get_similarity_report(
+                self.skillbook
             )
 
-    def save_playbook(self, path: str):
-        """Save learned playbook to file."""
-        self.playbook.save_to_file(path)
+        # Run SkillManager (with similarity report if available)
+        skill_manager_output = self.skill_manager.update_skills(
+            reflection=reflection,
+            skillbook=self.skillbook,
+            question_context=f"task: {task}",
+            progress=f"Claude Code: {task}",
+        )
 
-    def load_playbook(self, path: str):
-        """Load playbook from file."""
-        self.playbook = Playbook.load_from_file(path)
+        # Update skillbook with update operations
+        self.skillbook.apply_update(skill_manager_output.update)
+
+        # Apply consolidation operations if deduplication enabled
+        if self._dedup_manager and skill_manager_output.raw:
+            self._dedup_manager.apply_operations_from_response(
+                skill_manager_output.raw, self.skillbook
+            )
+
+    def save_skillbook(self, path: str):
+        """Save learned skillbook to file."""
+        self.skillbook.save_to_file(path)
+
+    def load_skillbook(self, path: str):
+        """Load skillbook from file."""
+        self.skillbook = Skillbook.load_from_file(path)
 
     def get_strategies(self) -> str:
-        """Get current playbook strategies as formatted text."""
-        if not self.playbook.bullets():
+        """Get current skillbook strategies as formatted text."""
+        if not self.skillbook.skills():
             return ""
-        return wrap_playbook_context(self.playbook)
+        return wrap_skillbook_context(self.skillbook)
 
     def enable_learning(self):
         """Enable ACE learning."""

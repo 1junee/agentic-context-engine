@@ -1,31 +1,32 @@
 """Agentic Context Engineering (ACE) reproduction framework."""
 
 from typing import Optional
-from .playbook import Bullet, Playbook
-from .delta import DeltaOperation, DeltaBatch
+from .skillbook import Skill, Skillbook
+from .updates import UpdateOperation, UpdateBatch
 from .llm import LLMClient, DummyLLMClient, TransformersLLMClient
 from .roles import (
-    Generator,
-    ReplayGenerator,
+    Agent,
+    ReplayAgent,
     Reflector,
-    Curator,
-    GeneratorOutput,
+    SkillManager,
+    AgentOutput,
     ReflectorOutput,
-    CuratorOutput,
+    SkillManagerOutput,
 )
 from .adaptation import (
-    OfflineAdapter,
-    OnlineAdapter,
+    OfflineACE,
+    OnlineACE,
+    ACEBase,
     Sample,
     TaskEnvironment,
     SimpleEnvironment,
     EnvironmentResult,
-    AdapterStepResult,
+    ACEStepResult,
 )
 from .async_learning import (
     LearningTask,
     ReflectionResult,
-    ThreadSafePlaybook,
+    ThreadSafeSkillbook,
     AsyncLearningPipeline,
 )
 
@@ -67,7 +68,7 @@ try:
         ACEAgent as _ACEAgent,
         ACELangChain as _ACELangChain,
         ACEClaudeCode as _ACEClaudeCode,
-        wrap_playbook_context as _wrap_playbook_context,
+        wrap_skillbook_context as _wrap_skillbook_context,
         BROWSER_USE_AVAILABLE as _BROWSER_USE_AVAILABLE,
         LANGCHAIN_AVAILABLE as _LANGCHAIN_AVAILABLE,
         CLAUDE_CODE_AVAILABLE as _CLAUDE_CODE_AVAILABLE,
@@ -77,7 +78,7 @@ try:
     ACEAgent: Optional[type] = _ACEAgent
     ACELangChain: Optional[type] = _ACELangChain
     ACEClaudeCode: Optional[type] = _ACEClaudeCode
-    wrap_playbook_context: Optional[type] = _wrap_playbook_context  # type: ignore
+    wrap_skillbook_context: Optional[type] = _wrap_skillbook_context  # type: ignore
     BROWSER_USE_AVAILABLE = _BROWSER_USE_AVAILABLE
     LANGCHAIN_AVAILABLE = _LANGCHAIN_AVAILABLE
     CLAUDE_CODE_AVAILABLE = _CLAUDE_CODE_AVAILABLE
@@ -86,7 +87,7 @@ except ImportError:
     ACEAgent: Optional[type] = None  # type: ignore
     ACELangChain: Optional[type] = None  # type: ignore
     ACEClaudeCode: Optional[type] = None  # type: ignore
-    wrap_playbook_context: Optional[type] = None  # type: ignore
+    wrap_skillbook_context: Optional[type] = None  # type: ignore
     BROWSER_USE_AVAILABLE = False
     LANGCHAIN_AVAILABLE = False
     CLAUDE_CODE_AVAILABLE = False
@@ -99,28 +100,29 @@ from .deduplication import (
 
 __all__ = [
     # Core components
-    "Bullet",
-    "Playbook",
-    "DeltaOperation",
-    "DeltaBatch",
+    "Skill",
+    "Skillbook",
+    "UpdateOperation",
+    "UpdateBatch",
     "LLMClient",
     "DummyLLMClient",
     "TransformersLLMClient",
     "LiteLLMClient",
-    "Generator",
-    "ReplayGenerator",
+    "Agent",
+    "ReplayAgent",
     "Reflector",
-    "Curator",
-    "GeneratorOutput",
+    "SkillManager",
+    "AgentOutput",
     "ReflectorOutput",
-    "CuratorOutput",
-    "OfflineAdapter",
-    "OnlineAdapter",
+    "SkillManagerOutput",
+    "OfflineACE",
+    "OnlineACE",
+    "ACEBase",
     "Sample",
     "TaskEnvironment",
     "SimpleEnvironment",
     "EnvironmentResult",
-    "AdapterStepResult",
+    "ACEStepResult",
     # Deduplication
     "DeduplicationConfig",
     "DeduplicationManager",
@@ -130,11 +132,11 @@ __all__ = [
     "ACELangChain",  # LangChain integration (complex workflows)
     "ACEClaudeCode",  # Claude Code CLI integration
     # Utilities
-    "wrap_playbook_context",
+    "wrap_skillbook_context",
     # Async learning
     "LearningTask",
     "ReflectionResult",
-    "ThreadSafePlaybook",
+    "ThreadSafeSkillbook",
     "AsyncLearningPipeline",
     # Feature flags
     "OpikIntegration",

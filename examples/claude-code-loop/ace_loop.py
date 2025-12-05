@@ -31,12 +31,12 @@ ACE_MODEL = os.getenv("ACE_MODEL", "claude-sonnet-4-5-20250929")
 
 # Paths
 WORKSPACE_DIR = DEMO_DIR / "workspace"  # Separate git repo
-PLAYBOOK_PATH = DATA_DIR / "playbooks" / "ace_typescript.json"
+SKILLBOOK_PATH = DATA_DIR / "skillbooks" / "ace_typescript.json"
 LOGS_DIR = DATA_DIR / "logs"
 
 # Ensure data directories exist
 DATA_DIR.mkdir(parents=True, exist_ok=True)
-(DATA_DIR / "playbooks").mkdir(exist_ok=True)
+(DATA_DIR / "skillbooks").mkdir(exist_ok=True)
 LOGS_DIR.mkdir(exist_ok=True)
 
 # Verify workspace is a git repository
@@ -125,7 +125,7 @@ WORKSPACE STRUCTURE:
 - .agent/ - your scratchpad (TODO.md, PLAN.md, notes)
 
 CRITICAL REQUIREMENTS:
-1. Apply relevant strategies from the playbook context (injected above)
+1. Apply relevant strategies from the skillbook context (injected above)
 2. Test every new feature/change BEFORE committing (run tests, check compilation)
 3. Make atomic git commits after each working unit (commit message should explain what was done and why)
 4. You are working in a dedicated git repository - commit freely after testing
@@ -345,29 +345,29 @@ def run_full_validation(workspace_dir: Path) -> tuple[bool, str]:
     return True, f"🎉 ALL VALIDATION CHECKS PASSED!\n\n{summary}"
 
 
-def print_playbook_summary(playbook):
-    """Show playbook as automatic prompt engineering."""
-    bullets = list(playbook.bullets())
-    new_count = len([b for b in bullets if b.helpful + b.harmful <= 1])
+def print_skillbook_summary(skillbook):
+    """Show skillbook as automatic prompt engineering."""
+    skills = list(skillbook.skills())
+    new_count = len([s for s in skills if s.helpful + s.harmful <= 1])
 
     print("\n" + "=" * 70)
-    print("📚 PLAYBOOK LEARNING SUMMARY")
+    print("📚 SKILLBOOK LEARNING SUMMARY")
     print("=" * 70)
     print(f"\n✅ Learned {new_count} new strategies during this run")
     print("💡 THIS IS AUTOMATIC PROMPT ENGINEERING")
     print("   No manual iteration needed - ACE learned from execution\n")
 
     # Show top strategies
-    sorted_bullets = sorted(bullets, key=lambda b: b.helpful - b.harmful, reverse=True)
+    sorted_skills = sorted(skills, key=lambda s: s.helpful - s.harmful, reverse=True)
     print("Top 5 Helpful Strategies:")
-    for i, bullet in enumerate(sorted_bullets[:5], 1):
-        score = f"[+{bullet.helpful} -{bullet.harmful}]"
+    for i, skill in enumerate(sorted_skills[:5], 1):
+        score = f"[+{skill.helpful} -{skill.harmful}]"
         content = (
-            bullet.content[:60] + "..." if len(bullet.content) > 60 else bullet.content
+            skill.content[:60] + "..." if len(skill.content) > 60 else skill.content
         )
         print(f"{i}. {score} {content}")
 
-    print(f"\n🎯 Next run will start with {len(bullets)} strategies")
+    print(f"\n🎯 Next run will start with {len(skills)} strategies")
     print("   Expect 60-80% improvement in tasks/time/cost\n")
 
 
@@ -423,10 +423,10 @@ def main():
     agent = ACEClaudeCode(
         working_dir=str(WORKSPACE_DIR),
         ace_model=ACE_MODEL,
-        playbook_path=str(PLAYBOOK_PATH) if PLAYBOOK_PATH.exists() else None,
+        skillbook_path=str(SKILLBOOK_PATH) if SKILLBOOK_PATH.exists() else None,
     )
 
-    print(f" Playbook: {len(list(agent.playbook.bullets()))} strategies")
+    print(f" Skillbook: {len(list(agent.skillbook.skills()))} strategies")
     print(f" Workspace: {WORKSPACE_DIR}")
 
     # Show current git branch
@@ -484,7 +484,7 @@ def main():
             task = """Create .agent/TODO.md with Python→TypeScript translation tasks.
 
 Use checkbox format with clear descriptions. Examples:
-- [ ] Translate source/ace/playbook.py to TypeScript (convert dataclasses to interfaces)
+- [ ] Translate source/ace/skillbook.py to TypeScript (convert dataclasses to interfaces)
 - [ ] Translate source/ace/roles.py to TypeScript (use Vercel AI SDK)
 - [ ] Create package.json with TypeScript dependencies
 
@@ -523,10 +523,10 @@ Group by module (Core, Integrations, LLM Providers, etc.)."""
         # Summary
         status = "SUCCESS" if result.success else "FAILED"
         print(f"\n Task {task_count}: {status}")
-        print(f" Playbook: {len(list(agent.playbook.bullets()))} strategies")
+        print(f" Skillbook: {len(list(agent.skillbook.skills()))} strategies")
 
         # Save after each task
-        agent.save_playbook(str(PLAYBOOK_PATH))
+        agent.save_skillbook(str(SKILLBOOK_PATH))
 
         if not AUTO_MODE:
             input("\nPress Enter to continue...")
@@ -577,7 +577,7 @@ Group by module (Core, Integrations, LLM Providers, etc.)."""
                         "This suggests fundamental issues with the translation approach."
                     )
                     print(
-                        "\nPlaybook has learned from failures - next run will be better."
+                        "\nSkillbook has learned from failures - next run will be better."
                     )
                     break
 
@@ -618,7 +618,7 @@ Do NOT move on to other tasks or improvements.
 
                 fix_result = agent.run(task=fix_prompt, context="")
                 results.append(fix_result)
-                agent.save_playbook(str(PLAYBOOK_PATH))
+                agent.save_skillbook(str(SKILLBOOK_PATH))
 
                 # Loop back to validation
 
@@ -632,8 +632,8 @@ Do NOT move on to other tasks or improvements.
     print(f"Validation attempts: {validation_attempts}")
     print(f"Total validation failures: {total_validation_failures}")
 
-    # Show playbook learning summary
-    print_playbook_summary(agent.playbook)
+    # Show skillbook learning summary
+    print_skillbook_summary(agent.skillbook)
 
     # Save run metrics
     try:
@@ -652,7 +652,7 @@ Do NOT move on to other tasks or improvements.
         "task_count": len(results),
         "validation_attempts": validation_attempts,
         "total_failures": total_validation_failures,
-        "strategies_count": len(list(agent.playbook.bullets())),
+        "strategies_count": len(list(agent.skillbook.skills())),
         "success": validation_attempts > 0
         and total_validation_failures < MAX_TOTAL_FAILURES,
     }
@@ -669,7 +669,7 @@ Do NOT move on to other tasks or improvements.
     if len(runs) > 1:
         print_improvement_analysis(run_metadata, runs[:-1])
 
-    print(f"Playbook saved to: {PLAYBOOK_PATH}")
+    print(f"Skillbook saved to: {SKILLBOOK_PATH}")
     print(f"Run metrics saved to: {runs_file}")
 
 
