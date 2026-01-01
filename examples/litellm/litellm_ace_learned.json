@@ -1,0 +1,23 @@
+{
+  "skills": {
+    "arithmetic_operations-00001": {
+      "id": "arithmetic_operations-00001",
+      "section": "arithmetic_operations",
+      "content": "Apply basic arithmetic for simple addition problems accurately",
+      "helpful": 3,
+      "harmful": 0,
+      "neutral": 0,
+      "created_at": "2026-01-01T12:15:19.382498+00:00",
+      "updated_at": "2026-01-01T12:15:47.868470+00:00",
+      "embedding": null,
+      "status": "active"
+    }
+  },
+  "sections": {
+    "arithmetic_operations": [
+      "arithmetic_operations-00001"
+    ]
+  },
+  "next_id": 1,
+  "similarity_decisions": {}
+}

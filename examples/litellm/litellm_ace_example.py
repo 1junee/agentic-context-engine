@@ -59,7 +59,8 @@ def main():
     # Create ACELiteLLM agent
     # Note: Change model for different providers (see docstring for examples)
     agent = ACELiteLLM(
-        model="claude-sonnet-4-5-20250929",  # Claude Sonnet 4.5
+        # model="claude-sonnet-4-5-20250929",  # Claude Sonnet 4.5
+        model="gpt-4o-mini",  # GPT-4o Mini
         max_tokens=512,  # Reasonable limit for simple Q&A
         temperature=0.2,  # Low temperature for consistent learning
         skillbook_path=str(skillbook_path) if skillbook_path.exists() else None,

@@ -17,6 +17,26 @@ from ace import ACELiteLLM, Sample, SimpleEnvironment
 
 load_dotenv()
 
+def print_step_outputs(step_result, index):
+    """Print Agent/Reflector/SkillManager outputs for a single sample."""
+    # Agent output is always available in both sync/async modes.
+    print(f"\n--- SAMPLE {index} ---")
+    print("[Agent]")
+    print(step_result.agent_output.model_dump())
+
+    # In async mode, reflection/skill_manager_output may not be available here.
+    if step_result.reflection is None:
+        print("[Reflector] (pending in async mode)")
+    else:
+        print("[Reflector]")
+        print(step_result.reflection.model_dump())
+
+    if step_result.skill_manager_output is None:
+        print("[SkillManager] (pending in async mode)")
+    else:
+        print("[SkillManager]")
+        print(step_result.skill_manager_output.update.to_json())
+
 
 def run_sync_learning():
     """Run learning in SYNC mode (blocking)."""
@@ -24,7 +44,7 @@ def run_sync_learning():
     print("SYNC MODE - Learning blocks after each sample")
     print("=" * 60)
 
-    agent = ACELiteLLM(model="claude-sonnet-4-5-20250929")
+    agent = ACELiteLLM(model="deepseek-chat")
 
     samples = [
         Sample(question="What is 2+2?", ground_truth="4"),
@@ -54,6 +74,10 @@ def run_sync_learning():
     print(f"  - Time elapsed: {elapsed:.2f}s")
     print(f"  - Strategies learned: {len(agent.skillbook.skills())}")
 
+    # Detailed per-sample outputs (Agent/Reflector/SkillManager).
+    for i, step in enumerate(results, 1):
+        print_step_outputs(step, i)
+
     return elapsed
 
 
@@ -63,7 +87,7 @@ def run_async_learning():
     print("ASYNC MODE - Learning runs in background")
     print("=" * 60)
 
-    agent = ACELiteLLM(model="claude-sonnet-4-5-20250929")
+    agent = ACELiteLLM(model="deepseek-chat")
 
     samples = [
         Sample(question="What is 2+2?", ground_truth="4"),
@@ -110,6 +134,10 @@ def run_async_learning():
     print(f"  - Learning wait time: {wait_time:.2f}s")
     print(f"  - Total time: {total_time:.2f}s")
     print(f"  - Strategies learned: {len(agent.skillbook.skills())}")
+
+    # Async results return before Reflector/SkillManager finish, so these may be pending.
+    for i, step in enumerate(results, 1):
+        print_step_outputs(step, i)
 
     # Show complete skillbook
     print(f"\n📚 COMPLETE SKILLBOOK:")
