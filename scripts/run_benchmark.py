@@ -63,8 +63,8 @@ def parse_args() -> argparse.Namespace:
     # Model configuration
     parser.add_argument(
         "--model",
-        default="gpt-4o-mini",
-        help="Model to use for evaluation (default: gpt-4o-mini)",
+        default="deepseek-chat",
+        help="Model to use for evaluation (default: deepseek-chat)",
     )
     parser.add_argument(
         "--temperature",
