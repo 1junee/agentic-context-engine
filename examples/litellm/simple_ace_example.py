@@ -55,12 +55,16 @@ def print_step_outputs(
 ):
     """Print Agent/Environment/Reflector/SkillManager outputs for a single sample."""
     print_header(f"SAMPLE {index}")
+
     print_section("Agent")
     print(format_payload(agent_output.model_dump()))
+
     print_section("Environment")
     print(format_payload(env_result))
+
     print_section("Reflector")
     print(format_payload(reflection.model_dump()))
+    
     print_section("SkillManager")
     print(format_payload(skill_manager_output.update.to_json()))
 
@@ -108,9 +112,13 @@ def main():
 
     # 2. Create training samples
     samples = [
-        Sample(question="What is 2+2?", ground_truth="4"),
-        Sample(question="What color is the sky?", ground_truth="blue"),
-        Sample(question="Capital of France?", ground_truth="Paris"),
+        Sample(question="What is the result of 17 * 23?", ground_truth="391"),
+        Sample(question="Solve for x in 3x - 7 = 20.", ground_truth=None),
+        Sample(question="Convert binary 110011 to decimal.", ground_truth="51"),
+        Sample(
+            question="As a non-major, outline a beginner roadmap to learn AI basics.",
+            ground_truth=None,
+        ),
     ]
 
     # 3. Train the agent
