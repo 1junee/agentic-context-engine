@@ -181,8 +181,15 @@ class Agent:
     ) -> None:
         # Auto-wrap with Instructor if not already wrapped
         # Use duck typing to detect Instructor capability (supports mocking)
+
+        # llm이 이미 complete_structured 메서드를 갖고 있으면 그대로 사용 → 즉, 구조화 응답 가능 LLM이면 래핑 없음
+        # 없으면 wrap_with_instructor로 감싸서 → **Pydantic 기반 구조화 출력 + 재시도(max_retries)**
+
+        # 덕 타이핑(duck typing) : 타입을 엄격히 체크하지 않고, **메서드를 갖고 있으면 그 타입으로 취급**
+        # Pydantic : AgentOutput 같은 구조가 **필수 필드와 타입을 강제**하도록 만들어, LLM 응답이 기대한 JSON 형태인지 자동으로 검증
         if hasattr(llm, "complete_structured"):
             self.llm = llm
+
         else:
             from .llm_providers.instructor_client import wrap_with_instructor
 
@@ -196,6 +203,7 @@ class Agent:
         tags=["ace-framework", "role", "agent"],
         project_name="ace-roles",
     )
+
     def generate(
         self,
         *,
@@ -235,6 +243,8 @@ class Agent:
         Returns:
             AgentOutput with reasoning, final_answer, and skill_ids used
         """
+
+        # Agent 프롬프트 구성하기
         base_prompt = self.prompt_template.format(
             skillbook=skillbook.as_prompt() or "(empty skillbook)",
             reflection=_format_optional(reflection),
@@ -243,11 +253,15 @@ class Agent:
         )
 
         # Filter out non-LLM kwargs (like 'sample' used for ReplayAgent)
+        # temperature, max_tokens 등 LLM 호출에 필요한 인자 추출
         llm_kwargs = {k: v for k, v in kwargs.items() if k != "sample"}
 
         # Use Instructor for automatic validation (always available - core dependency)
+        # Pydantic 기반 구조화 출력 + 재시도(max_retries)
         output = self.llm.complete_structured(base_prompt, AgentOutput, **llm_kwargs)
         output.skill_ids = extract_cited_skill_ids(output.reasoning)
+
+        # import pdb; pdb.set_trace()
         return output
 
 
@@ -436,18 +450,19 @@ class ReplayAgent:
         )
 
 
+# ReflectorOutput.extracted_learnings 관련
 class ExtractedLearning(BaseModel):
     """A single learning extracted by the Reflector from task execution."""
 
     learning: str = Field(..., description="The extracted learning or insight")
     atomicity_score: float = Field(
         default=0.0, ge=0.0, le=1.0, description="How atomic/focused this learning is"
-    )
+    )  # greater or equal to 0.0 and less or equal to 1.0
     evidence: str = Field(
         default="", description="Evidence from execution supporting this learning"
     )
 
-
+# ReflectorOutput.skill_tags 관련
 class SkillTag(BaseModel):
     """Classification tag for a skill strategy (helpful/harmful/neutral)."""
 
@@ -460,6 +475,7 @@ class SkillTag(BaseModel):
 class ReflectorOutput(BaseModel):
     """Output from the Reflector role containing analysis and skill classifications."""
 
+    # 임의 타입 허용 설정
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     reasoning: str = Field(..., description="Overall reasoning about the outcome")
@@ -569,6 +585,8 @@ class Reflector:
         max_refinement_rounds: int = 1,
         **kwargs: Any,
     ) -> ReflectorOutput:
+        
+        # agent_output.skill_ids로 스킬북에서 Agent가 사용한 스킬들만 뽑아 요약
         skillbook_excerpt = _make_skillbook_excerpt(skillbook, agent_output.skill_ids)
 
         # Format skillbook section based on citation presence
@@ -577,6 +595,7 @@ class Reflector:
         else:
             skillbook_context = "(No strategies cited - outcome-based learning)"
 
+        # Reflector 프롬프트 구성하기
         base_prompt = self.prompt_template.format(
             question=question,
             reasoning=agent_output.reasoning,
@@ -747,6 +766,8 @@ class SkillManager:
         # Get similarity report if deduplication is enabled
         similarity_report = None
         if self.dedup_manager is not None:
+            # 현재 스킬북에서 의미적으로 유사한 스킬 쌍을 탐지하고, SkillManager에게 보여줄 리포트 문자열을 생성
+            # 유사 쌍이 충분하지 않거나 dedup 비활성이면 None 반환
             similarity_report = self.dedup_manager.get_similarity_report(skillbook)
             if similarity_report:
                 logger.info("Including similarity report in SkillManager prompt")
@@ -796,7 +817,7 @@ class SkillManager:
 
         return output
 
-
+# Agent가 reasoning에서 인용한 스킬들만 추려서 Reflector에게 보여주는 요약 텍스트를 생성
 def _make_skillbook_excerpt(skillbook: Skillbook, skill_ids: Sequence[str]) -> str:
     lines: List[str] = []
     seen = set()

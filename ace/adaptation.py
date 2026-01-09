@@ -24,12 +24,12 @@ if TYPE_CHECKING:
 
 from .skillbook import Skillbook
 from .roles import (
-    SkillManager,
-    SkillManagerOutput,
     Agent,
     AgentOutput,
     Reflector,
     ReflectorOutput,
+    SkillManager,
+    SkillManagerOutput,
 )
 
 logger = logging.getLogger(__name__)
@@ -171,8 +171,9 @@ class ACEBase:
         agent: Agent,
         reflector: Reflector,
         skill_manager: SkillManager,
+        # Agent가 보는 최근 리플렉션 수
+        reflection_window: int = 3,    
         max_refinement_rounds: int = 1,
-        reflection_window: int = 3,
         enable_observability: bool = True,
         # Async learning parameters
         async_learning: bool = False,
